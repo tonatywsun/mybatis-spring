@@ -15,9 +15,9 @@
  */
 package org.mybatis.spring.scan;
 
-import java.util.function.Supplier;
-
 import org.apache.ibatis.jdbc.SQL;
+
+import java.util.function.Supplier;
 
 public class ScanClass1 {
 

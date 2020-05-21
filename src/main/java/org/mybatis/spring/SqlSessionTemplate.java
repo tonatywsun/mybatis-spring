@@ -15,19 +15,6 @@
  */
 package org.mybatis.spring;
 
-import static java.lang.reflect.Proxy.newProxyInstance;
-import static org.apache.ibatis.reflection.ExceptionUtil.unwrapThrowable;
-import static org.mybatis.spring.SqlSessionUtils.closeSqlSession;
-import static org.mybatis.spring.SqlSessionUtils.getSqlSession;
-import static org.mybatis.spring.SqlSessionUtils.isSqlSessionTransactional;
-import static org.springframework.util.Assert.notNull;
-
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.executor.BatchResult;
@@ -39,6 +26,19 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.sql.Connection;
+import java.util.List;
+import java.util.Map;
+
+import static java.lang.reflect.Proxy.newProxyInstance;
+import static org.apache.ibatis.reflection.ExceptionUtil.unwrapThrowable;
+import static org.mybatis.spring.SqlSessionUtils.closeSqlSession;
+import static org.mybatis.spring.SqlSessionUtils.getSqlSession;
+import static org.mybatis.spring.SqlSessionUtils.isSqlSessionTransactional;
+import static org.springframework.util.Assert.notNull;
 
 /**
  * Thread safe, Spring managed, {@code SqlSession} that works with Spring transaction management to ensure that that the
@@ -220,6 +220,8 @@ public class SqlSessionTemplate implements SqlSession, DisposableBean {
    */
   @Override
   public <E> List<E> selectList(String statement, Object parameter) {
+    //this.sqlSessionProxy = (SqlSession) newProxyInstance(SqlSessionFactory.class.getClassLoader(),new Class[] { SqlSession.class }, new SqlSessionInterceptor());
+    //这里的sqlSessionProxy也是一个代理类其中InvocationHandler就是SqlSessionInterceptor，所以会执行到SqlSessionInterceptor的invoke方法
     return this.sqlSessionProxy.selectList(statement, parameter);
   }
 
@@ -420,6 +422,7 @@ public class SqlSessionTemplate implements SqlSession, DisposableBean {
   private class SqlSessionInterceptor implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+      //SqlSessionTemplate通过自己内部封装的属性sessionFactory获取到一个新的sqlSession去执行sql,获取到的类是DefaultSqlSession
       SqlSession sqlSession = getSqlSession(SqlSessionTemplate.this.sqlSessionFactory,
           SqlSessionTemplate.this.executorType, SqlSessionTemplate.this.exceptionTranslator);
       try {
@@ -444,6 +447,7 @@ public class SqlSessionTemplate implements SqlSession, DisposableBean {
         }
         throw unwrapped;
       } finally {
+        //此处关闭了sqlSession所以mybatis一级缓存失效
         if (sqlSession != null) {
           closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
         }

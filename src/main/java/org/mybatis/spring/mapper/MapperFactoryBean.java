@@ -15,13 +15,13 @@
  */
 package org.mybatis.spring.mapper;
 
-import static org.springframework.util.Assert.notNull;
-
 import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.session.Configuration;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.support.SqlSessionDaoSupport;
 import org.springframework.beans.factory.FactoryBean;
+
+import static org.springframework.util.Assert.notNull;
 
 /**
  * BeanFactory that enables injection of MyBatis mapper interfaces. It can be set up with a SqlSessionFactory or a
@@ -51,6 +51,9 @@ import org.springframework.beans.factory.FactoryBean;
  *
  * @see SqlSessionTemplate
  */
+/**
+*每个mapper在spring容器中都是一个MapperFactoryBean
+ */
 public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements FactoryBean<T> {
 
   private Class<T> mapperInterface;
@@ -65,6 +68,25 @@ public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements Factor
     this.mapperInterface = mapperInterface;
   }
 
+  /**
+   * MapperFactoryBean<T> extends SqlSessionDaoSupport
+   * SqlSessionDaoSupport extends DaoSupport
+   * DaoSupport implements InitializingBean
+   * 所以MapperFactoryBean是一个InitializingBean会执行其afterPropertiesSet方法，没有则执行父类
+   * @Override
+   *    public final void afterPropertiesSet() throws IllegalArgumentException, BeanInitializationException {
+   * 		// Let abstract subclasses check their configuration.
+   * 		checkDaoConfig();//此处会执行此处checkDaoConfig()方法
+   *
+   * 		// Let concrete implementations initialize themselves.
+   * 		try {
+   * 			initDao();
+   *    }
+   * 		catch (Exception ex) {
+   * 			throw new BeanInitializationException("Initialization of DAO failed", ex);
+   *    }
+   *  }
+   */
   /**
    * {@inheritDoc}
    */
@@ -90,8 +112,11 @@ public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements Factor
   /**
    * {@inheritDoc}
    */
+  //factoryBeangetObject()方法对象会放到容器中
+  //此处会把返回的对象就是实际的mapper代理对象放到容器中
   @Override
   public T getObject() throws Exception {
+    //getSqlSession返回的是return this.sqlSessionTemplate;注意这里是sqlSessionTemplate
     return getSqlSession().getMapper(this.mapperInterface);
   }
 
