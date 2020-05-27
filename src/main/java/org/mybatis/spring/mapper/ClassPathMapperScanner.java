@@ -235,6 +235,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 
       if (!explicitFactoryUsed) {
         LOGGER.debug(() -> "Enabling autowire by type for MapperFactoryBean with name '" + holder.getBeanName() + "'.");
+        //设置属性自动注入类型为BY_TYPE
         definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);
       }
       definition.setLazyInit(lazyInitialization);
